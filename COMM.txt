@@ -1,0 +1,53 @@
+ 
+CREATE PROC [dbo].[CRYSTAL_PROC_COMMERICIAL_INVOICE]
+@DocKey Int
+AS
+SELECT 
+OADM.CompnyName AS "Company Name",
+'27AADCF1715FZ0' AS "Company GSTIN NO",
+'AADCF1715F' AS "Company PAN NO",
+T0.DocNum AS "Tax Invoice No",
+T0.DocDate AS "Tax Invoice Date",
+T0.NumAtCard AS "PO No",
+CAST(NULL AS DATETIME) AS "PO Date",
+CAST(NULL AS VARCHAR(100)) AS "Transporter",
+CAST(NULL AS  VARCHAR(100)) AS "Vehicle No",
+T0.CardName AS "Consignee Name",
+T0.Address AS "Consignee Address",
+(SELECT TOP 1 A.GSTRegnNo FROM CRD1 A WHERE A.CardCode = T0.CardCode AND A.GSTRegnNo IS NOT NULL ) AS GSTRegnNo,
+T1.ItemCode AS "Item Code",
+T1.Dscription AS "Description of Goods",
+CAST(NULL AS  VARCHAR(100)) AS "HSN No",
+CAST(NULL AS  VARCHAR(100)) AS "DRG No",
+
+T1.Quantity,
+T1.Price AS "Unit Price",
+T1.LineTotal AS "Total Price",
+T0.DocTotal
+FROM OADM,OINV T0
+INNER JOIN INV1 T1 ON T0.DocEntry = T1.DocEntry
+WHERE T0.DocEntry = @DocKey
+
+create PROC [dbo].[CRYSTAL_PROC_COMMERICIAL_INVOICE_TAX]
+(@DocEntry int)
+AS
+SELECT T0.STACODE,
+t3.Name [tax name],
+CASE WHEN T2.DocCur = 'INR'
+THEN  ISNULL(sum(T0.TAXSUM),0) ELSE ISNULL(SUM(T0.TaxSumFrgn),0) END
+as taxsum,T0.DocEntry,
+
+case when T0.StaCode ='Service' then 1 
+    when T0.StaCode ='SseviceD' then 1  
+    when T0.StaCode ='Cess_ST' then 2
+	 when T0.StaCode ='HSC_ST' then 3
+	 else 4 end [taxorder]
+
+FROM INV4 T0
+INNER JOIN OSTT T1
+ON T0.staType=T1.ABSID
+inner join oinv T2 on T2.DocEntry = T0.DocEntry
+left join OSTA t3 on t3.Code = T0.StaCode
+WHERE T0.DOCENTRY=@DocEntry --and T1.AbsId = 4
+group by T0.STACODE,T0.TAXRATE,T0.DocEntry,T2.DocCur,t3.Name
+order by taxorder
