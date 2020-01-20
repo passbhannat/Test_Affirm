@@ -1,0 +1,14 @@
+ CREATE PROC [dbo].[SP_QC_REPORT_COA]  
+@DocKey Varchar(20)  
+--SP_QC_REPORT_COA 1  
+AS  
+SELECT OADM.CompnyName,REPLACE(OADM.CompnyAddr,CHAR(13),', ') CompnyAddr, T0.U_ItemName [Product Name] ,T0.U_Batch [Batch],T0.U_DocDate [Date of Manu]  
+,T0.U_DocDate [Date of Test],T0.U_Quantity [Batch Qty],'' [Loc Address]  
+,T1.U_PName [Tests],T2.U_UOM [UOM],T2.U_TMethod [Method],T1.U_Spec [Spec],  
+T1.U_MiRange [MiRange],T1.U_MxRange [MxRange],T1.U_Result [Result]  
+--,T0.U_Remarks [Remarks]  
+,T0.U_Remarks [Remarks]  
+FROM OADM,[@QC_QC] T0  
+INNER JOIN [@QC_QC1] T1 ON T0.DocEntry=T1.DocEntry  
+LEFT JOIN [@QC_PARA] T2 ON T1.U_PCode=T2.Code  
+WHERE T0.DocEntry=@DocKey
